@@ -16,65 +16,99 @@ To Implement Linear and Polynomial Trend Estiamtion Using Python.
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-data=pd.read_csv('AirPassengers.csv',parse_dates=['Month'],index_col='Month')
-data.head()
-resampled_data = data['#Passengers'].resample('Y').sum().to_frame()
-resampled_data.head()
-resampled_data.index = resampled_data.index.year
-resampled_data.reset_index(inplace=True)
-resampled_data.rename(columns={'Month': 'Year'}, inplace=True)
-resampled_data.head()
-years = resampled_data['Year'].tolist()
-passengers = resampled_data['#Passengers'].tolist()
 
-X = [i - years[len(years) // 2] for i in years]
-x2 = [i ** 2 for i in X]
-xy = [i * j for i, j in zip(X, passengers)]
+# Load CarDekho dataset
+file_path = "cardekho.csv"   # <-- update file path
+data = pd.read_csv(file_path)
+
+# Check dataset columns
+print(data.head())
+
+# Assuming dataset has columns: "year" and "selling_price"
+# Aggregate yearly sales (sum of selling_price per year)
+yearly_sales = data.groupby("year")["selling_price"].sum().reset_index()
+
+# Rename columns to fit trend estimation format
+yearly_sales.rename(columns={"year": "Year", "selling_price": "Sales"}, inplace=True)
+
+# Extract values
+years = yearly_sales["Year"].tolist()
+sales = yearly_sales["Sales"].tolist()
+
+# Prepare values for linear regression
+X = [i - (len(years) // 2) for i in range(len(years))]
+x2 = [i**2 for i in X]
+xy = [i * j for i, j in zip(X, sales)]
+
 n = len(years)
-b = (n * sum(xy) - sum(passengers) * sum(X)) / (n * sum(x2) - (sum(X) ** 2))
-a = (sum(passengers) - b * sum(X)) / n
-linear_trend = [a + b * X[i] for i in range(n)]
+b = (n * sum(xy) - sum(sales) * sum(X)) / (n * sum(x2) - (sum(X) ** 2))
+a = (sum(sales) - b * sum(X)) / n
+linear_trend = [a + b * Xi for Xi in X]
 
-x3 = [i ** 3 for i in X]
-x4 = [i ** 4 for i in X]
-x2y = [i * j for i, j in zip(x2, passengers)]
-coeff = [[len(X), sum(X), sum(x2)],
-[sum(X), sum(x2), sum(x3)],
-[sum(x2), sum(x3), sum(x4)]]
-Y = [sum(passengers), sum(xy), sum(x2y)]
+# Polynomial Trend Estimation (Degree 2)
+x3 = [i**3 for i in X]
+x4 = [i**4 for i in X]
+x2y = [i * j for i, j in zip(x2, sales)]
+
+coeff = [[n, sum(X), sum(x2)],
+         [sum(X), sum(x2), sum(x3)],
+         [sum(x2), sum(x3), sum(x4)]]
+
+Y = [sum(sales), sum(xy), sum(x2y)]
 A = np.array(coeff)
 B = np.array(Y)
+
 solution = np.linalg.solve(A, B)
 a_poly, b_poly, c_poly = solution
-poly_trend = [a_poly + b_poly * X[i] + c_poly * (X[i] ** 2) for i in range(n)]
-```
-```
-## A - LINEAR TREND ESTIMATION
-
-print(f"Linear Trend: y={a:.2f} + {b:.2f}x")
-resampled_data['Linear Trend'] = linear_trend
-resampled_data['#Passengers'].plot(kind='line',color='blue',marker='o') 
-resampled_data['Linear Trend'].plot(kind='line',color='black',linestyle='--')
+poly_trend = [a_poly + b_poly * Xi + c_poly * (Xi**2) for Xi in X]
 
 ```
 ```
-## B- POLYNOMIAL TREND ESTIMATION
+# Display trend equations
+print(f"Linear Trend: y = {a:.2f} + {b:.2f}x")
 
-print(f"\nPolynomial Trend: y={a_poly:.2f} + {b_poly:.2f}x + {c_poly:.2f}x²")
-resampled_data['Polynomial Trend'] = poly_trend
-resampled_data['#Passengers'].plot(kind='line',color='blue',marker='o')
-resampled_data['Polynomial Trend'].plot(kind='line',color='black',marker='o')
+# Plot results
+plt.figure(figsize=(12,6))
+plt.plot(years, sales, 'bo-', label="Actual Sales")
+plt.plot(years, linear_trend, 'k--', label="Linear Trend")
+
+plt.title("CarDekho Sales Trend Estimation")
+plt.xlabel("Year")
+plt.ylabel("Total Sales (Selling Price Sum)")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+```
+```
+# Display trend equations
+print(f"Polynomial Trend: y = {a_poly:.2f} + {b_poly:.2f}x + {c_poly:.2f}x²")
+
+# Plot results
+plt.figure(figsize=(12,6))
+plt.plot(years, sales, 'bo-', label="Actual Sales")
+plt.plot(years, poly_trend, 'r-', label="Polynomial Trend")
+
+plt.title("CarDekho Sales Trend Estimation")
+plt.xlabel("Year")
+plt.ylabel("Total Sales (Selling Price Sum)")
+plt.legend()
+plt.grid(True)
+plt.show()
 
 ```
 ## OUTPUT
 
+<img width="836" height="457" alt="image" src="https://github.com/user-attachments/assets/bcfd0b01-2493-4ccc-86b4-96da4a5c4457" />
+
 ### A - LINEAR TREND ESTIMATION
 
-<img width="748" height="610" alt="image" src="https://github.com/user-attachments/assets/cc934036-b732-4568-bed0-d276b6012273" />
+<img width="1243" height="706" alt="image" src="https://github.com/user-attachments/assets/0bc4268e-5ed8-463e-b886-922645e78e41" />
 
 ### B- POLYNOMIAL TREND ESTIMATION
 
-<img width="751" height="626" alt="image" src="https://github.com/user-attachments/assets/e5058689-63eb-4e63-a09e-f5816f560e40" />
+<img width="1267" height="717" alt="image" src="https://github.com/user-attachments/assets/7192b618-5959-4df0-8be0-5073071150b1" />
 
 ## RESULT:
+
 Thus the python program for linear and Polynomial Trend Estiamtion has been executed successfully.
